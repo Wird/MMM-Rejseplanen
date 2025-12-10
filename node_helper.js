@@ -23,7 +23,11 @@ module.exports = NodeHelper.create({
       + "?id=" + this.config.stationID
       + (this.config.vehicletype || "")
       + "&format=json"
-      + "&accessId=" + this.config.accessId;
+      + "&accessId=" + this.config.accessId
+      // NYT: bed om flere afgange
+      + "&maxJourneys=20"
+      // NYT: kig 3 timer frem
+      + "&duration=180";
 
     function scheduleNext(ms) {
       setTimeout(function() { self.getData(); }, ms);
@@ -51,7 +55,6 @@ module.exports = NodeHelper.create({
             let soonestMinutes = null;
 
             deps.forEach(d => {
-              // Brug realtime hvis det findes, ellers planlagt tid
               const dateStr = d.rtDate || d.date;
               const timeStr = d.rtTime || d.time;
               if (!dateStr || !timeStr) return;
@@ -71,21 +74,19 @@ module.exports = NodeHelper.create({
             });
 
             if (soonestMinutes === null) {
-              // kunne ikke parse tider -> hold moderat polling
               nextInterval = 1000 * 60 * 15;
             } else if (soonestMinutes <= 15) {
               nextInterval = 1000 * 60 * 2;   // 2 min
             } else if (soonestMinutes <= 30) {
               nextInterval = 1000 * 60 * 5;   // 5 min
             } else if (soonestMinutes <= 60) {
-              nextInterval = 1000 * 60 * 10;  // 10 min (mellemtrin)
+              nextInterval = 1000 * 60 * 10;  // 10 min
             } else if (soonestMinutes <= 120) {
               nextInterval = 1000 * 60 * 30;  // 30 min
             } else {
               nextInterval = 1000 * 60 * 60;  // 60 min når > 2 timer
             }
           } else {
-            // Ingen afgange i svaret -> sjælden, men poll roligt
             nextInterval = 1000 * 60 * 30;
           }
 
@@ -98,7 +99,7 @@ module.exports = NodeHelper.create({
       })
       .catch(err => {
         console.error("MMM-Rejseplanen fetch error:", err);
-        scheduleNext(1000 * 60 * 30); // ved fejl: 15 min
+        scheduleNext(1000 * 60 * 30);
       });
   },
 
